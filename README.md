@@ -6,3 +6,6 @@
 
 ```text
 m = (A_t, B_t)
+
+実行結果は以下の画像です
+![IIT anti-synchrony plot](download.png)
