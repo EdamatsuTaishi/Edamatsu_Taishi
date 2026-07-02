@@ -1,54 +1,44 @@
-
-import math
+import numpy as np
 import matplotlib.pyplot as plt
 
-states = ["00", "01", "10", "11"]
+def calculate_phi(w):
+    """
+    結合強度 w における統合情報量 (Phi) を計算する。
+    w = 0.5 のとき完全に独立 (Phi = 0)
+    w = 1.0 のとき完全に同期 (Phi = 1, 講義ノートの例1.3に相当)
+    """
+    # 完全に独立している場合は、KLダイバージェンスは0
+    if w == 0.5:
+        return 0.0
+    elif w == 1.0:
+        return 1.0
+    
+    # 実際の分布 p (結合強度 w に依存)
+    # p(0,0) = w/2, p(1,1) = w/2, p(0,1) = (1-w)/2, p(1,0) = (1-w)/2
+    p = np.array([w/2, (1-w)/2, (1-w)/2, w/2])
+    
+    # 分割後の分布 q (各ユニットの周辺分布の積、常に 1/4)
+    q = np.array([0.25, 0.25, 0.25, 0.25])
+    
+    # KLダイバージェンス (Phi) の計算
+    phi = np.sum(p * np.log2(p / q))
+    return phi
 
-# Whole effect repertoire:
-# the future units must be opposite.
-p_whole = [0.0, 0.5, 0.5, 0.0]
+# 結合強度 w を 0.5 から 1.0 まで変化させる
+w_vals = np.linspace(0.5, 1.0, 100)
+phi_vals = [calculate_phi(w) for w in w_vals]
 
-# Partitioned repertoire:
-# after cutting A and B, each unit is independently 0 or 1 with probability 1/2.
-q_cut = [0.25, 0.25, 0.25, 0.25]
-
-def kl_divergence(p, q):
-    """Compute D_KL(p || q) in bits."""
-    total = 0.0
-    for pi, qi in zip(p, q):
-        if pi > 0:
-            total += pi * math.log2(pi / qi)
-    return total
-
-phi = kl_divergence(p_whole, q_cut)
-
-x = range(len(states))
-width = 0.35
-
+# プロットの作成
 plt.figure(figsize=(8, 5))
-plt.bar([i - width/2 for i in x], p_whole, width, label="Whole repertoire p")
-plt.bar([i + width/2 for i in x], q_cut, width, label="Cut repertoire q")
+plt.plot(w_vals, phi_vals, label=r'$\phi_{eff}(m)$', color='blue', linewidth=2)
+plt.title('Integrated Information $\phi$ vs. Coupling Strength $w$\n(New IIT Example for Assignment)', fontsize=12)
+plt.xlabel('Coupling Strength $w$ (0.5: Independent, 1.0: Fully Correlated)', fontsize=10)
+plt.ylabel('Integrated Information $\phi$ (bits)', fontsize=10)
+plt.grid(True, linestyle='--', alpha=0.7)
+plt.axhline(y=1.0, color='r', linestyle=':', label='Example 1.3 Max (1 bit)')
+plt.legend(fontsize=10)
 
-plt.xticks(list(x), states)
-plt.ylim(0, 0.65)
-plt.xlabel("Future state $(A_{t+1}, B_{t+1})$")
-plt.ylabel("Probability")
-plt.title("IIT toy example: anti-synchrony is lost by cutting the system")
-plt.legend()
-
-for i, value in enumerate(p_whole):
-    plt.text(i - width/2, value + 0.02, str(value), ha="center")
-for i, value in enumerate(q_cut):
-    plt.text(i + width/2, value + 0.02, str(value), ha="center")
-
-plt.figtext(
-    0.5,
-    0.01,
-    rf"$\phi^{{\pi}}_{{eff}} = D_{{KL}}(p \parallel q) = {phi:.1f}$ bit. "
-    r"The whole specifies $A_{t+1} \ne B_{t+1}$, but the cut parts do not.",
-    ha="center",
-    fontsize=10,
-)
-
-plt.tight_layout(rect=[0, 0.06, 1, 1])
+# 画像の保存
+plt.savefig('iit_plot.png', dpi=300)
+print("Plot successfully saved as 'iit_plot.png'")
 plt.show()
